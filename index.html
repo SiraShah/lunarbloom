@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Birthday Countdown</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #4e4b4b, #2c2a2a);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      color: #ff6b6b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
+    h1, h2, h3 {
+      margin: 0.2rem;
+      text-align: center;
+      text-shadow: 1px 1px 4px #331111;
+    }
+    #countdown {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      color: #ff4c4c;
+      text-shadow: 1px 1px 8px #8b1c1c;
+    }
+    .date-list {
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    .date-card {
+      background: #fefefe;
+      border-radius: 1rem;
+      padding: 1rem 1.5rem;
+      width: 320px;
+      cursor: pointer;
+      box-shadow: 0 6px 15px rgb(0 0 0 / 0.3);
+      color: #d80000;
+      font-weight: 700;
+      text-align: center;
+      user-select: none;
+      transition: 
+        background-color 0.3s ease,
+        transform 0.25s ease,
+        box-shadow 0.35s ease;
+      position: relative;
+    }
+    .date-card:hover:not(.disabled) {
+      background: #ffbbbb;
+      color: #7a0303;
+      transform: scale(1.05);
+      box-shadow: 0 15px 25px rgb(255 74 74 / 0.7);
+      z-index: 10;
+    }
+    .date-card.disabled {
+      color: #aaa;
+      cursor: not-allowed;
+      background: #eee;
+      box-shadow: none;
+      transform: none !important;
+    }
+    .popup-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #222222ee;
+      backdrop-filter: blur(12px);
+      padding: 2rem;
+      border-radius: 1rem;
+      display: flex;
+      gap: 2rem;
+      max-width: 80vw;
+      max-height: 80vh;
+      overflow: auto;
+      color: #fff;
+      box-shadow: 0 0 40px #ff6767aa;
+      z-index: 1000;
+    }
+    .popup-image {
+      max-width: 300px;
+      max-height: 300px;
+      border-radius: 1rem;
+      object-fit: cover;
+      box-shadow: 0 10px 20px rgba(236, 123, 123, 0.7);
+    }
+    .popup-message {
+      max-width: 500px;
+      font-size: 1.25rem;
+      text-shadow: 0 0 8px #ff4545;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.8rem;
+    }
+    .popup-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #ff4444;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      color: white;
+      font-weight: 700;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff0000cc;
+      transition: background-color 0.3s ease;
+    }
+    .popup-close:hover {
+      background: #cc0000;
+    }
+  </style>
+</head>
+<body>
+  <header class="w-full max-w-screen-md text-center mb-8">
+    <h1 class="text-3xl font-extrabold">Birthday Countdown</h1>
+    <h2 class="text-xl font-semibold">Wohooo!!!</h2>
+    <h3 class="text-md font-medium">Let's go gorgeous</h3>
+    <p class="text-sm font-normal mt-1">Happy Birthday Baby</p>
+    <div id="countdown" aria-live="polite" aria-atomic="true">Loading countdown...</div>
+  </header>
+
+  <main>
+    <section class="date-list" id="dateList" aria-label="Birthday Countdown Dates">
+      <!-- Dates will be injected here -->
+    </section>
+  </main>
+
+  <div id="popup" class="popup-container" role="dialog" aria-modal="true" aria-labelledby="popupTitle" aria-describedby="popupDesc" style="display:none;">
+    <button aria-label="Close popup" id="popupClose" class="popup-close">&times;</button>
+    <img id="popupImage" alt="Birthday related image" class="popup-image" src="" />
+    <div id="popupMsg" class="popup-message">
+      <h2 id="popupTitle"></h2>
+      <p id="popupDesc"></p>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      // Setting countdown end date (June 28, current year)
+      const today = new Date();
+      const year = today.getFullYear();
+      const endDate = new Date(year, 5, 28, 23, 59, 59); // June is month 5 zero-based in JS
+
+      // Array of info for each day from today to June 28 inclusive
+      // Includes: dayLabel, dateString, customized message, and image URL
+      // We'll generate it dynamically but with fixed messages/images for demo
+      const daysInfo = [];
+
+      // Date formatting options
+      const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+
+      // Helper for zero-pad day count (for display consistency)
+      function zeroPad(num, length = 2) {
+        return num.toString().padStart(length, '0');
+      }
+
+      // Predefined messages and images for 6 days from example (can be extended)
+      const dayCustomData = {
+        1: {
+          msgTitle: "Day 1 - The Countdown to Her Begins... ",
+          msgBody: `Good Morning My Love 💛
+Aaj ka subah sirf tumhare naam, jaise har din meri duniya sirf tumse shuru hoti hai.
+6 din baaki hain uss din ke liye jab meri duniya born hui thi 🎂
+Tumhari muskaan, meri subah ka sunshine hai issliye hi toh tumhara snap maangte rehta hu me baby.
+Love you Payuu 💫 `,
+          img: "images/23 JUNE.jpeg",
+          
+        },
+        2: {
+          msgTitle: "Day 2 -Five Days Away From Magic!",
+          msgBody: `Good Morning My Pumpkin 🧡
+Bas 5 din aur baby, tumhara birthday aane wala hai!
+Main sochta hoon ki kaise itni perfect ladki meri life mein aayi.
+Tum meri zindagi ka sabse pyara surprise ho.
+Tum ho toh sab kuch hai 💕✨ `,
+          img: "images/24 JUNE.jpeg"
+                },
+        3: {
+          msgTitle: "Day 3 -  Love Glows Louder, Four Days To Go ",
+          msgBody: `Good Morning My Babudii 💖
+Kal ki subah se zyada khoobsurat sirf tum ho.
+4 din aur... phir tumhara special day!
+Jab se tum aayi ho, har din ek nayi khushi leke aata hai.
+Meri jaan, tum meri heartbeat ho 💓`,
+          img: "images/22  June.jpeg"
+        },
+        4: {
+          msgTitle: "Day 4 - Three Sunrises Away From Her Smile ",
+          msgBody: `Good Morning My Baby 🌸
+Sirf 3 din aur, phir meri princess ka birthday 👑
+Har pal tumhare saath ek fairytale jaisa lagta hai.
+Aaj ka din bhi tere pyaar se roshan ho gaya hai.
+Main hamesha tumhare saath hoon, har subah, har raat 🌙.`,
+          img: "images/25 JUNE.jpeg"
+        },
+        5: {
+          msgTitle: "Day 5 - Two Heartbeats From Forever!",
+          msgBody: `Good Morning My Queen 💕
+2 din mein tumhara birthday, aur main sabse zyada excited hoon!
+Tum meri har dua ka jawaab ho, meri har khushi ki wajah ho.
+Tumhara pyaar meri zindagi ka sabse sundar hissa hai.
+I love you jaan, har saans se zyada 💗`,
+          img: "images/26 JUNE.jpeg"
+        },
+        6: {
+          msgTitle: "Day 6 - The Night Before My Universe Was Born",
+          msgBody: `Good Morning My Princess 💫
+Kal ka din sirf tumhara hai baby!
+Ek din baaki hai meri duniya ke celebration ke liye.
+Tumhare bina zindagi adhuri lagti hai, jaise chaand bina noor ke.
+Tera pyaar meri zindagi ka sabse haseen ehsaas hai 💖`,
+          img: "images/27 JUNE.jpeg"},
+        7: {
+          msgTitle: "Day 7 - The Day My Moon Was Born ",
+          msgBody: `Happy Birthday My Soulmate 🌙❤️
+Good morning meri zindagi... aaj wo din hai jiska intezaar mujhe ye saal sabse zyada hai!
+28 June — the day meri jaan is duniya mein aayi thi... jis din meri khushiyon ka raasta bana.
+Tum meri har muskaan ke peeche ki wajah ho.
+Jab tum hasti ho na, lagta hai duniya ruk jaaye.
+Meri duniya tum ho baby — tumhare bina sab kuch adhoora.
+Tumhare saath har lamha perfect lagta hai, jaise waqt bhi ruk ke tujhmein kho jaata ho.
+
+ye saal bahut saare ladai huii hamari but see mene pura ye cheeze sirf hindi me likha hu
+thoda hi english use kiya bus my love, TC of your health too my love.
+
+This is our first pic from where we start our journey baby I love you...
+Aur tab se leke aaj tak, har yaad, har moment, har pal tumhare saath ek nayi duniya si lagti hai.
+Tumhare bina sab kuch bekaar hai, tum ho toh main hoon.
+Aaj ka din sirf tumhara hai — Happy Birthday meri jaan, meri pyaari Payuu 💖
+
+Main hamesha tumhare saath hoon, har janam, har waqt.
+Love you endlessly, truly, madly, deeply... 💞🌈`,
+          img: "images/28 JUNE.jpeg"
+        },
+      };
+
+      // Generate dates from today to June 28th
+      function generateDates() {
+        daysInfo.length = 0;
+        let dayIndex = 1;
+        let dateIterator = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        while (dateIterator <= endDate) {
+          const formattedDate = dateIterator.toLocaleDateString('en-US', options);
+
+          daysInfo.push({
+            dayIndex: dayIndex,
+            dateObj: new Date(dateIterator),
+            displayText: `Day ${dayIndex} - ${formattedDate}`,
+            ...dayCustomData[dayIndex] || {
+              msgTitle: `Day ${dayIndex}`,
+              msgBody: "Have a great day!",
+              img: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=400&q=80"
+            }
+          });
+
+          dateIterator.setDate(dateIterator.getDate() + 1);
+          dayIndex++;
+        }
+      }
+
+      // Elements
+      const dateListEl = document.getElementById('dateList');
+      const countdownEl = document.getElementById('countdown');
+      const popupEl = document.getElementById('popup');
+      const popupCloseBtn = document.getElementById('popupClose');
+      const popupImage = document.getElementById('popupImage');
+      const popupMsgTitle = document.getElementById('popupTitle');
+      const popupMsgDesc = document.getElementById('popupDesc');
+
+      // Render date cards
+      function renderDateCards() {
+        dateListEl.innerHTML = "";
+        const now = new Date();
+
+        daysInfo.forEach(({ dayIndex, dateObj, displayText, msgTitle, msgBody, img }) => {
+          const card = document.createElement('button');
+          card.className = 'date-card';
+          card.type = 'button';
+          card.textContent = displayText;
+
+          // Disable card if date is in the future (not today or passed)
+          if (dateObj > now) {
+            card.classList.add('disabled');
+            card.setAttribute('aria-disabled', 'true');
+            card.title = "Not available yet";
+          } else {
+            card.setAttribute('aria-disabled', 'false');
+            card.title = `Open details for ${displayText}`;
+            card.addEventListener('click', () => openPopup(msgTitle, msgBody, img));
+          }
+
+          dateListEl.appendChild(card);
+        });
+      }
+
+      // Open popup with content
+      function openPopup(title, message, imageUrl) {
+        popupImage.src = imageUrl;
+        popupMsgTitle.textContent = title;
+        popupMsgDesc.textContent = message;
+        popupEl.style.display = "flex";
+        popupCloseBtn.focus();
+        document.body.style.overflow = "hidden";
+      }
+
+      // Close popup
+      function closePopup() {
+        popupEl.style.display = "none";
+        popupImage.src = "";
+        popupMsgTitle.textContent = "";
+        popupMsgDesc.textContent = "";
+        document.body.style.overflow = "";
+      }
+
+      popupCloseBtn.addEventListener('click', closePopup);
+
+      popupEl.addEventListener('click', (e) => {
+        if (e.target === popupEl) {
+          closePopup();
+        }
+      });
+
+      // Countdown update function
+      function updateCountdown() {
+        const now = new Date();
+        let diff = endDate - now;
+
+        if (diff < 0) {
+          countdownEl.textContent = "🎉 The birthday has arrived! 🎉";
+          return;
+        }
+
+        const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hoursLeft = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutesLeft = Math.floor((diff / (1000 * 60)) % 60);
+        const secondsLeft = Math.floor((diff / 1000) % 60);
+
+        countdownEl.textContent = `Countdown: ${daysLeft}d ${zeroPad(hoursLeft)}h ${zeroPad(minutesLeft)}m ${zeroPad(secondsLeft)}s left until June 28!`;
+      }
+
+      // Initialize the app
+      function init() {
+        generateDates();
+        renderDateCards();
+        updateCountdown();
+        setInterval(() => {
+          updateCountdown();
+          renderDateCards(); // Refresh disabled/enabled states as the day advances
+        }, 1000);
+      }
+
+      window.onload = init;
+    })();
+  </script>
+</body>
+</html>
+
