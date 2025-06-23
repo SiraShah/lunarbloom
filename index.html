@@ -1,232 +1,458 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Birthday Countdown</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background: linear-gradient(135deg, #4e4b4b, #2c2a2a);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      color: #ff6b6b;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem;
-    }
-    h1, h2, h3 {
-      margin: 0.2rem;
-      text-align: center;
-      text-shadow: 1px 1px 4px #331111;
-    }
-    #countdown {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 2rem;
-      color: #ff4c4c;
-      text-shadow: 1px 1px 8px #8b1c1c;
-    }
-    .date-list {
-      max-width: 900px;
-      width: 100%;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1.5rem;
-    }
-    .date-card {
-      background: #fefefe;
-      border-radius: 1rem;
-      padding: 1rem 1.5rem;
-      width: 320px;
-      cursor: pointer;
-      box-shadow: 0 6px 15px rgb(0 0 0 / 0.3);
-      color: #d80000;
-      font-weight: 700;
-      text-align: center;
-      user-select: none;
-      transition: 
-        background-color 0.3s ease,
-        transform 0.25s ease,
-        box-shadow 0.35s ease;
-      position: relative;
-    }
-    .date-card:hover:not(.disabled) {
-      background: #ffbbbb;
-      color: #7a0303;
-      transform: scale(1.05);
-      box-shadow: 0 15px 25px rgb(255 74 74 / 0.7);
-      z-index: 10;
-    }
-    .date-card.disabled {
-      color: #aaa;
-      cursor: not-allowed;
-      background: #eee;
-      box-shadow: none;
-      transform: none !important;
-    }
-    .popup-container {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: #222222ee;
-      backdrop-filter: blur(12px);
-      padding: 2rem;
-      border-radius: 1rem;
-      display: flex;
-      gap: 2rem;
-      max-width: 80vw;
-      max-height: 80vh;
-      overflow: auto;
-      color: #fff;
-      box-shadow: 0 0 40px #ff6767aa;
-      z-index: 1000;
-    }
-    .popup-image {
-      max-width: 300px;
-      max-height: 300px;
-      border-radius: 1rem;
-      object-fit: cover;
-      box-shadow: 0 10px 20px rgba(236, 123, 123, 0.7);
-    }
-    .popup-message {
-      max-width: 500px;
-      font-size: 1.25rem;
-      text-shadow: 0 0 8px #ff4545;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 0.8rem;
-    }
-    .popup-close {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: #ff4444;
-      border: none;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      color: white;
-      font-weight: 700;
-      font-size: 1.5rem;
-      cursor: pointer;
-      box-shadow: 0 0 10px #ff0000cc;
-      transition: background-color 0.3s ease;
-    }
-    .popup-close:hover {
-      background: #cc0000;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Birthday Countdown</title>
+    <!-- Tailwind CSS for basic styling utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js for sound generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Define keyframe animation for confetti */
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Keyframe animation for a subtle, soothing background glow */
+        @keyframes background-pulse-glow {
+            0% { box-shadow: 0 0 40px rgba(138, 43, 226, 0.2), 0 0 80px rgba(255, 105, 180, 0.2); }
+            50% { box-shadow: 0 0 60px rgba(138, 43, 226, 0.4), 0 0 100px rgba(255, 105, 180, 0.4); }
+            100% { box-shadow: 0 0 40px rgba(138, 43, 226, 0.2), 0 0 80px rgba(255, 105, 180, 0.2); }
+        }
+
+        /* Custom styles to enhance the visual appeal */
+        body {
+            background: linear-gradient(135deg, #1b2735 0%, #090a0f 100%); /* Deep, soothing gradient */
+            font-family: 'Inter', sans-serif; /* Modern font */
+            min-height: 100vh; /* Full viewport height */
+            margin: 0;
+            color: #e0e0e0; /* Softer light text for general body content */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem; /* Increased padding */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+            overflow-x: hidden; /* Prevent horizontal scroll from animations */
+            position: relative; /* Needed for absolute positioning of background elements */
+        }
+
+        /* Animated background for the entire page (subtle glow) */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through */
+            z-index: -1; /* Behind all content */
+            animation: background-pulse-glow 15s infinite ease-in-out; /* Slower, smoother animation */
+            background: radial-gradient(circle at center, rgba(138, 43, 226, 0.1), transparent 70%); /* Violet glow */
+        }
+
+
+        /* Confetti effect (multiple instances generated by JS, styled here) */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #ffd700; /* Gold */
+            border-radius: 50%;
+            animation: confetti-fall 8s linear infinite;
+            opacity: 0;
+            will-change: transform, opacity; /* Optimize animation performance */
+        }
+        .confetti:nth-child(2n) { background-color: #ff69b4; border-radius: 2px; animation-duration: 9s; animation-delay: -2s; } /* Hot Pink */
+        .confetti:nth-child(3n) { background-color: #add8e6; border-radius: 50%; animation-duration: 7s; animation-delay: -4s; } /* Light Blue */
+        .confetti:nth-child(4n) { background-color: #90ee90; border-radius: 2px; animation-duration: 10s; animation-delay: -6s; } /* Light Green */
+
+        /* Styles for the main header section */
+        header {
+            /* Birthday cake image from Unsplash for background */
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), /* Darker overlay for text readability */
+                        url('https://images.unsplash.com/photo-1558223631-4091e0339d2c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w1MDcxMzJ8MHwxfHNlYXJjaHwyMHx8YmlydGhkYXklMjBjYWtlfGVufDB8fHx8MTcxOTIxMjM0Nnww&ixlib=rb-4.0.3&q=80&w=1080') center/cover no-repeat;
+            border-radius: 1.5rem; /* More rounded header corners */
+            padding: 2.5rem 1.5rem; /* More generous padding */
+            margin-bottom: 3rem; /* More space below header */
+            box-shadow: 0 12px 40px rgba(255, 105, 180, 0.7); /* More prominent, pink-ish header shadow */
+            color: #ffffff; /* White text for contrast on dark background */
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            width: 90%; /* Responsive width */
+            max-width: 1000px; /* Max width for larger screens */
+            box-sizing: border-box;
+            border: 2px solid #ff69b4; /* Accent border for header - hot pink */
+            background-size: cover; /* Ensure image covers the area */
+            background-position: center; /* Center the image */
+            transition: all 0.3s ease-in-out; /* Smooth transition for header */
+        }
+        header:hover {
+            box-shadow: 0 15px 50px rgba(255, 105, 180, 0.9); /* Stronger glow on hover */
+            transform: translateY(-5px);
+        }
+
+        h1, h2, h3, header p {
+            position: relative; /* Ensure text is above ::before pseudo-element */
+            z-index: 2;
+            margin: 0.2rem 0; /* Adjusted margins */
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.8); /* Stronger text shadow for readability */
+        }
+
+        h1 {
+            font-size: 3.8rem; /* Larger title */
+            font-weight: 900; /* Extra bold */
+            color: #ffdeb4; /* Soft gold for main title */
+            letter-spacing: 0.08em; /* Slightly more spaced letters */
+            text-transform: uppercase; /* Uppercase for more impact */
+        }
+        h2 {
+            font-size: 2.5rem; /* Larger subtitle */
+            font-weight: 700;
+            color: #ffebcd; /* Lighter cream for Wohooo */
+            letter-spacing: 0.05em;
+        }
+        h3 {
+            font-size: 1.8rem; /* Larger sub-subtitle */
+            font-weight: 600;
+            color: #c0f0ff; /* Light, ethereal blue */
+        }
+        header p {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #f0f0f0; /* Near white for "Happy Birthday Baby" */
+            margin-top: 0.8rem;
+        }
+        #countdown {
+            font-size: 3rem; /* Even larger countdown */
+            font-weight: 800; /* Bolder font */
+            margin-top: 2rem; /* More space above countdown */
+            color: #ff8c69; /* Soft coral for countdown */
+            text-shadow: 1px 1px 15px #ff5733; /* Stronger glow effect */
+            padding: 0.7rem 1.5rem;
+            border-radius: 1rem;
+            background-color: rgba(255, 255, 255, 0.15); /* More transparent background */
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.8); /* Enhanced, pink-ish glow effect */
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease-in-out;
+        }
+        #countdown:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(255, 105, 180, 1);
+        }
+
+        .date-list {
+            max-width: 1000px; /* Increased max width for better layout */
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.8rem; /* Increased gap between cards */
+        }
+        .date-card {
+            background: #ffffff; /* Pure white for clean look */
+            border-radius: 1.5rem; /* More rounded corners */
+            padding: 1.2rem 1.8rem; /* More padding inside cards */
+            width: 320px; /* Fixed width for consistency */
+            flex-shrink: 0; /* Prevent shrinking */
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); /* Softer shadow */
+            color: #5d3a5a; /* Deep purple-brown for text */
+            font-weight: 700;
+            text-align: center;
+            user-select: none;
+            transition:
+                background-color 0.3s ease,
+                transform 0.25s ease,
+                box-shadow 0.35s ease,
+                opacity 0.3s ease; /* Transition for opacity too */
+            position: relative;
+            border: 2px solid transparent; /* Border for highlighting */
+        }
+        .date-card:hover:not(.disabled) {
+            background: #ffe0f0; /* Soft pink on hover */
+            color: #8a2be2; /* Blue violet on hover */
+            transform: translateY(-8px) scale(1.03); /* Lift and slightly scale on hover */
+            box-shadow: 0 18px 30px rgba(255, 105, 180, 0.7); /* Stronger pink-ish hover shadow */
+            z-index: 10;
+        }
+        .date-card.disabled {
+            color: #b0b0b0; /* Softer disabled text */
+            cursor: default; /* Change cursor for disabled */
+            background: #f5f5f5; /* Lighter background for disabled */
+            box-shadow: none;
+            transform: none !important;
+            opacity: 0.5; /* More subtle disabled look */
+            text-decoration: none; /* Remove line-through for disabled */
+            border-color: #e0e0e0; /* Softer border */
+        }
+        /* Style for past dates specifically */
+        .date-card.past-date {
+            opacity: 0.6;
+            text-decoration: line-through; /* Keep line-through for past */
+            color: #a0a0a0;
+        }
+        /* Style for today's card */
+        .date-card.today-card {
+            background: #fff0f5; /* Blossom pink for today */
+            color: #a020f0; /* Purple for today */
+            border-color: #ff69b4; /* Hot pink accent border for today */
+            box-shadow: 0 8px 20px rgba(255, 105, 180, 0.6); /* Glow for today */
+        }
+        .popup-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(30, 30, 40, 0.98); /* Darker, slightly blue-ish opaque background */
+            backdrop-filter: blur(18px); /* Stronger blur */
+            padding: 2.8rem; /* More padding */
+            border-radius: 1.8rem; /* More rounded */
+            display: flex;
+            flex-direction: column; /* Stack items on small screens */
+            gap: 2.5rem;
+            max-width: 90vw; /* Larger max width */
+            max-height: 90vh; /* Larger max height */
+            overflow: auto;
+            color: #f0f0f0; /* Lighter text */
+            box-shadow: 0 0 60px rgba(138, 43, 226, 0.8); /* Violet glow */
+            z-index: 1000;
+            opacity: 0; /* Start hidden for transition */
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .popup-container.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        @media (min-width: 768px) {
+            .popup-container {
+                flex-direction: row; /* Row layout on larger screens */
+            }
+        }
+        .popup-image {
+            max-width: 350px; /* Larger image */
+            max-height: 350px;
+            width: 100%; /* Make image responsive within container */
+            height: auto;
+            border-radius: 1.5rem; /* More rounded */
+            object-fit: cover;
+            box-shadow: 0 15px 30px rgba(138, 43, 226, 0.7); /* Deeper violet image shadow */
+        }
+        .popup-message {
+            max-width: 600px; /* Wider message area */
+            font-size: 1.25rem; /* Slightly larger font */
+            line-height: 1.7; /* Better readability */
+            text-shadow: 0 0 12px rgba(255, 105, 180, 0.5); /* Soft pink text glow */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 1.2rem; /* More space between title/description */
+            white-space: pre-wrap; /* Preserve line breaks in messages */
+        }
+        .popup-message h2 {
+            font-size: 2rem; /* Larger title in popup */
+            font-weight: 700;
+            color: #ffebcd; /* Soft gold for popup title */
+        }
+        .popup-close {
+            position: absolute;
+            top: 1.5rem; /* More spacing */
+            right: 1.5rem; /* More spacing */
+            background: #ff69b4; /* Hot pink */
+            border: none;
+            border-radius: 50%;
+            width: 45px; /* Larger close button */
+            height: 45px;
+            color: white;
+            font-weight: 700;
+            font-size: 2rem; /* Larger font for 'x' */
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.9); /* Stronger pink glow */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-close:hover {
+            background: #e04b9e; /* Darker pink on hover */
+            transform: scale(1.15) rotate(90deg); /* More dynamic hover effect */
+        }
+        /* Hidden class for the removed play button */
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 640px) {
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.4rem; }
+            h3 { font-size: 1.1rem; }
+            header p { font-size: 0.9rem; }
+            #countdown { font-size: 1.4rem; margin-bottom: 1.5rem; padding: 0.5rem 1rem; }
+            .date-card {
+                width: calc(100% - 1rem); /* Full width minus padding on small screens */
+                padding: 1rem 1rem;
+            }
+            .popup-container {
+                padding: 1rem;
+                flex-direction: column; /* Ensure column layout on small screens */
+                align-items: center;
+                gap: 1.5rem;
+            }
+            .popup-image {
+                max-width: 200px;
+                max-height: 200px;
+                border-radius: 1rem;
+            }
+            .popup-message {
+                font-size: 0.9rem;
+                text-align: center;
+                gap: 0.5rem;
+            }
+            .popup-message h2 {
+                font-size: 1.2rem;
+            }
+            .popup-close {
+                width: 30px;
+                height: 30px;
+                font-size: 1.2rem;
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+            header {
+                padding: 1.5rem 1rem;
+                margin-bottom: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header class="w-full max-w-screen-md text-center mb-8">
-    <h1 class="text-3xl font-extrabold">Birthday Countdown</h1>
-    <h2 class="text-xl font-semibold">Wohooo!!!</h2>
-    <h3 class="text-md font-medium">Let's go gorgeous</h3>
-    <p class="text-sm font-normal mt-1">Happy Birthday Baby</p>
-    <div id="countdown" aria-live="polite" aria-atomic="true">Loading countdown...</div>
-  </header>
+    <!-- Confetti elements for animation -->
+    <div class="confetti" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="confetti" style="left: 20%; animation-delay: 1.5s;"></div>
+    <div class="confetti" style="left: 30%; animation-delay: 3s;"></div>
+    <div class="confetti" style="left: 40%; animation-delay: 4.5s;"></div>
+    <div class="confetti" style="left: 50%; animation-delay: 6s;"></div>
+    <div class="confetti" style="left: 60%; animation-delay: 0.5s;"></div>
+    <div class="confetti" style="left: 70%; animation-delay: 2s;"></div>
+    <div class="confetti" style="left: 80%; animation-delay: 3.5s;"></div>
+    <div class="confetti" style="left: 90%; animation-delay: 5s;"></div>
 
-  <main>
-    <section class="date-list" id="dateList" aria-label="Birthday Countdown Dates">
-      <!-- Dates will be injected here -->
-    </section>
-  </main>
+    <header class="w-full max-w-screen-lg text-center">
+        <h1 class="font-extrabold">Birthday Countdown</h1>
+        <h2 class="font-semibold">Wohooo!!!</h2>
+        <h3 class="font-medium">Let's go gorgeous</h3>
+        <p class="font-normal">Happy Birthday Baby</p>
+        <div id="countdown" aria-live="polite" aria-atomic="true">Loading countdown...</div>
+        <!-- Play Birthday Tune button is removed for automatic playback -->
+    </header>
 
-  <div id="popup" class="popup-container" role="dialog" aria-modal="true" aria-labelledby="popupTitle" aria-describedby="popupDesc" style="display:none;">
-    <button aria-label="Close popup" id="popupClose" class="popup-close">&times;</button>
-    <img id="popupImage" alt="Birthday related image" class="popup-image" src="" />
-    <div id="popupMsg" class="popup-message">
-      <h2 id="popupTitle"></h2>
-      <p id="popupDesc"></p>
+    <main>
+        <section class="date-list" id="dateList" aria-label="Birthday Countdown Dates">
+            <!-- Date cards will be dynamically injected here -->
+        </section>
+    </main>
+
+    <div id="popup" class="popup-container" role="dialog" aria-modal="true" aria-labelledby="popupTitle" aria-describedby="popupDesc">
+        <button aria-label="Close popup" id="popupClose" class="popup-close">&times;</button>
+        <img id="popupImage" alt="Birthday related image" class="popup-image" src="" />
+        <div id="popupMsg" class="popup-message">
+            <h2 id="popupTitle"></h2>
+            <p id="popupDesc"></p>
+        </div>
     </div>
-  </div>
 
-  <script>
-    (() => {
-      // Setting countdown end date (June 28, current year)
-      const today = new Date();
-      const year = today.getFullYear();
-      const endDate = new Date(year, 5, 28, 23, 59, 59); // June is month 5 zero-based in JS
+    <script>
+        (() => {
+            // Global flag to ensure birthday tune plays only once automatically
+            let birthdaySoundPlayed = false;
 
-      // Array of info for each day from today to June 28 inclusive
-      // Includes: dayLabel, dateString, customized message, and image URL
-      // We'll generate it dynamically but with fixed messages/images for demo
-      const daysInfo = [];
+            // Get the current date and year
+            const today = new Date();
+            const currentYear = today.getFullYear();
 
-      // Date formatting options
-      const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+            // Set the target birthday date (June 28th of the current year)
+            // Month is 0-indexed, so 5 is June. Time is set to end of day.
+            const endDate = new Date(currentYear, 5, 28, 23, 59, 59, 999);
 
-      // Helper for zero-pad day count (for display consistency)
-      function zeroPad(num, length = 2) {
-        return num.toString().padStart(length, '0');
-      }
+            // Define the earliest date for which cards should be displayed (June 22nd)
+            const startDateForCards = new Date(currentYear, 5, 22);
 
-      // Predefined messages and images for 6 days from example (can be extended)
-      const dayCustomData = {
-        1: {
-          msgTitle: "Day 1 - The Countdown to Her Begins... ",
-          msgBody: `Good Morning My Love 💛
+            // Array to hold the data for each daily card
+            const daysInfo = [];
+
+            // Options for formatting dates to display on cards
+            const dateDisplayOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+
+            // Helper function to add leading zeros for countdown display
+            function zeroPad(num, length = 2) {
+                return num.toString().padStart(length, '0');
+            }
+
+            // Predefined messages and images, mapped by the day of the month (e.g., 22, 23, 24)
+            // Using placeholder images from placehold.co to demonstrate alignment.
+            // Replace these with your actual image URLs if hosted.
+            const dayContentMap = {
+                22: { // This is now Day 1
+                    msgTitle: "Day 1 - The Countdown to Her Begins...",
+                    msgBody: `Good Morning My Love 💛
 Aaj ka subah sirf tumhare naam, jaise har din meri duniya sirf tumse shuru hoti hai.
 6 din baaki hain uss din ke liye jab meri duniya born hui thi 🎂
 Tumhari muskaan, meri subah ka sunshine hai issliye hi toh tumhara snap maangte rehta hu me baby.
 Love you Payuu 💫 `,
-          img: "images/23 JUNE.jpeg",
-          
-        },
-        2: {
-          msgTitle: "Day 2 -Five Days Away From Magic!",
-          msgBody: `Good Morning My Pumpkin 🧡
+                    img: "images/22  June.jpeg", // Soft pink placeholder
+                },
+                23: { // This is now Day 2
+                    msgTitle: "Day 2 - Five Days Away From Magic!",
+                    msgBody: `Good Morning My Pumpkin 🧡
 Bas 5 din aur baby, tumhara birthday aane wala hai!
 Main sochta hoon ki kaise itni perfect ladki meri life mein aayi.
 Tum meri zindagi ka sabse pyara surprise ho.
 Tum ho toh sab kuch hai 💕✨ `,
-          img: "images/24 JUNE.jpeg"
+                    img: "images/23 JUNE.jpeg", // Light blue placeholder
                 },
-        3: {
-          msgTitle: "Day 3 -  Love Glows Louder, Four Days To Go ",
-          msgBody: `Good Morning My Babudii 💖
+                24: { // This is now Day 3
+                    msgTitle: "Day 3 - Love Glows Louder, Four Days To Go",
+                    msgBody: `Good Morning My Babudii 💖
 Kal ki subah se zyada khoobsurat sirf tum ho.
 4 din aur... phir tumhara special day!
 Jab se tum aayi ho, har din ek nayi khushi leke aata hai.
-Meri jaan, tum meri heartbeat ho 💓`,
-          img: "images/22  June.jpeg"
-        },
-        4: {
-          msgTitle: "Day 4 - Three Sunrises Away From Her Smile ",
-          msgBody: `Good Morning My Baby 🌸
+Meri jaan, tum meri heartbeat ho💓`,
+                    img: "images/24 JUNE.jpeg", // Khaki yellow placeholder
+                },
+                25: { // This is now Day 4
+                    msgTitle: "Day 4 - Three Sunrises Away From Her Smile",
+                    msgBody: `Good Morning My Baby 🌸
 Sirf 3 din aur, phir meri princess ka birthday 👑
 Har pal tumhare saath ek fairytale jaisa lagta hai.
 Aaj ka din bhi tere pyaar se roshan ho gaya hai.
 Main hamesha tumhare saath hoon, har subah, har raat 🌙.`,
-          img: "images/25 JUNE.jpeg"
-        },
-        5: {
-          msgTitle: "Day 5 - Two Heartbeats From Forever!",
-          msgBody: `Good Morning My Queen 💕
+                    img: "images/25 JUNE.jpeg", // Plum pink placeholder
+                },
+                26: { // This is now Day 5
+                    msgTitle: "Day 5 - Two Heartbeats From Forever!",
+                    msgBody: `Good Morning My Queen 💕
 2 din mein tumhara birthday, aur main sabse zyada excited hoon!
 Tum meri har dua ka jawaab ho, meri har khushi ki wajah ho.
 Tumhara pyaar meri zindagi ka sabse sundar hissa hai.
 I love you jaan, har saans se zyada 💗`,
-          img: "images/26 JUNE.jpeg"
-        },
-        6: {
-          msgTitle: "Day 6 - The Night Before My Universe Was Born",
-          msgBody: `Good Morning My Princess 💫
+                    img: "images/26 JUNE.jpeg", // Pale green placeholder
+                },
+                27: { // This is now Day 6
+                    msgTitle: "Day 6 - The Night Before My Universe Was Born",
+                    msgBody: `Good Morning My Princess 💫
 Kal ka din sirf tumhara hai baby!
 Ek din baaki hai meri duniya ke celebration ke liye.
 Tumhare bina zindagi adhuri lagti hai, jaise chaand bina noor ke.
 Tera pyaar meri zindagi ka sabse haseen ehsaas hai 💖`,
-          img: "images/27 JUNE.jpeg"},
-        7: {
-          msgTitle: "Day 7 - The Day My Moon Was Born ",
-          msgBody: `Happy Birthday My Soulmate 🌙❤️
-Good morning meri zindagi... aaj wo din hai jiska intezaar mujhe ye saal sabse zyada hai!
+                    img: "images/27 JUNE.jpeg", // Powder blue placeholder
+                },
+                28: { // Birthday Message remains for June 28
+                    msgTitle: "Happy Birthday My Soulmate 🌙❤️",
+                    msgBody: `Good morning meri zindagi... aaj wo din hai jiska intezaar mujhe ye saal sabse zyada hai!
 28 June — the day meri jaan is duniya mein aayi thi... jis din meri khushiyon ka raasta bana.
 Tum meri har muskaan ke peeche ki wajah ho.
 Jab tum hasti ho na, lagta hai duniya ruk jaaye.
@@ -243,128 +469,224 @@ Aaj ka din sirf tumhara hai — Happy Birthday meri jaan, meri pyaari Payuu 💖
 
 Main hamesha tumhare saath hoon, har janam, har waqt.
 Love you endlessly, truly, madly, deeply... 💞🌈`,
-          img: "images/28 JUNE.jpeg"
-        },
-      };
+                    img: "images/28 JUNE.jpeg", // Peach puff placeholder
+                },
+            };
 
-      // Generate dates from today to June 28th
-      function generateDates() {
-        daysInfo.length = 0;
-        let dayIndex = 1;
-        let dateIterator = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        while (dateIterator <= endDate) {
-          const formattedDate = dateIterator.toLocaleDateString('en-US', options);
+            // Function to generate and populate the daysInfo array
+            function generateDates() {
+                daysInfo.length = 0; // Clear any existing data
+                let dateIterator = new Date(startDateForCards); // Start from June 22nd
 
-          daysInfo.push({
-            dayIndex: dayIndex,
-            dateObj: new Date(dateIterator),
-            displayText: `Day ${dayIndex} - ${formattedDate}`,
-            ...dayCustomData[dayIndex] || {
-              msgTitle: `Day ${dayIndex}`,
-              msgBody: "Have a great day!",
-              img: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=400&q=80"
+                // Loop until the iterator date exceeds the end date (June 28th)
+                while (dateIterator <= endDate) {
+                    const formattedDate = dateIterator.toLocaleDateString('en-US', dateDisplayOptions);
+                    const dayOfMonth = dateIterator.getDate(); // Get the day of the month (e.g., 22, 23, 24)
+
+                    // Retrieve custom content for the current day, or use a generic fallback
+                    const customData = dayContentMap[dayOfMonth] || {
+                        msgTitle: `Day ${dayOfMonth} - Generic Message`,
+                        msgBody: "No specific message for this day. Have a great one!",
+                        img: `https://placehold.co/350x350/cccccc/333?text=Day+${dayOfMonth}`, // Generic placeholder
+                    };
+
+                    daysInfo.push({
+                        dateObj: new Date(dateIterator), // Store a copy of the date object
+                        displayText: formattedDate,
+                        ...customData, // Spread the custom message and image data
+                    });
+
+                    dateIterator.setDate(dateIterator.getDate() + 1); // Increment to the next day
+                }
             }
-          });
 
-          dateIterator.setDate(dateIterator.getDate() + 1);
-          dayIndex++;
-        }
-      }
+            // Get references to the main DOM elements
+            const dateListEl = document.getElementById('dateList');
+            const countdownEl = document.getElementById('countdown');
+            const popupEl = document.getElementById('popup');
+            const popupCloseBtn = document.getElementById('popupClose');
+            const popupImage = document.getElementById('popupImage');
+            const popupMsgTitle = document.getElementById('popupTitle');
+            const popupMsgDesc = document.getElementById('popupDesc');
 
-      // Elements
-      const dateListEl = document.getElementById('dateList');
-      const countdownEl = document.getElementById('countdown');
-      const popupEl = document.getElementById('popup');
-      const popupCloseBtn = document.getElementById('popupClose');
-      const popupImage = document.getElementById('popupImage');
-      const popupMsgTitle = document.getElementById('popupTitle');
-      const popupMsgDesc = document.getElementById('popupDesc');
+            // Function to render or re-render the date cards in the DOM
+            function renderDateCards() {
+                dateListEl.innerHTML = ""; // Clear existing cards to re-render
+                const now = new Date();
+                // Normalize 'now' to just the date part (year, month, day) for accurate comparison
+                const todayDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      // Render date cards
-      function renderDateCards() {
-        dateListEl.innerHTML = "";
-        const now = new Date();
+                daysInfo.forEach(({ dateObj, displayText, msgTitle, msgBody, img }) => {
+                    const card = document.createElement('button');
+                    card.className = 'date-card rounded-2xl p-4 md:p-6 shadow-lg hover:shadow-xl transition-all';
+                    card.type = 'button';
+                    card.textContent = displayText;
+                    card.setAttribute('tabindex', '0'); // Make button focusable
 
-        daysInfo.forEach(({ dayIndex, dateObj, displayText, msgTitle, msgBody, img }) => {
-          const card = document.createElement('button');
-          card.className = 'date-card';
-          card.type = 'button';
-          card.textContent = displayText;
+                    // Normalize the card's date to just the date part for comparison
+                    const cardDateOnly = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
 
-          // Disable card if date is in the future (not today or passed)
-          if (dateObj > now) {
-            card.classList.add('disabled');
-            card.setAttribute('aria-disabled', 'true');
-            card.title = "Not available yet";
-          } else {
-            card.setAttribute('aria-disabled', 'false');
-            card.title = `Open details for ${displayText}`;
-            card.addEventListener('click', () => openPopup(msgTitle, msgBody, img));
-          }
+                    // Determine the state of the card (past, today, or future)
+                    if (cardDateOnly.getTime() === todayDateOnly.getTime()) {
+                        // This is today's card
+                        card.classList.add('today-card'); // Specific class for today's styling
+                        card.classList.remove('disabled', 'past-date');
+                        card.setAttribute('aria-disabled', 'false');
+                        card.title = `Open details for today: ${displayText}`;
+                        card.addEventListener('click', () => openPopup(msgTitle, msgBody, img)); // Attach listener
+                    } else if (cardDateOnly < todayDateOnly) {
+                        // This is a past card
+                        card.classList.add('disabled', 'past-date'); // Apply disabled and past-date styles
+                        card.classList.remove('today-card');
+                        card.setAttribute('aria-disabled', 'true'); // Still allow opening for past dates
+                        card.title = "This day has passed (click to view message)";
+                        card.addEventListener('click', () => openPopup(msgTitle, msgBody, img)); // Attach listener
+                    } else {
+                        // This is a future card
+                        card.classList.add('disabled'); // Apply disabled style
+                        card.classList.remove('today-card', 'past-date');
+                        card.setAttribute('aria-disabled', 'true');
+                        card.title = "Not available yet";
+                        // !!! IMPORTANT: NO click event listener attached for future dates !!!
+                    }
 
-          dateListEl.appendChild(card);
-        });
-      }
+                    dateListEl.appendChild(card);
+                });
+            }
 
-      // Open popup with content
-      function openPopup(title, message, imageUrl) {
-        popupImage.src = imageUrl;
-        popupMsgTitle.textContent = title;
-        popupMsgDesc.textContent = message;
-        popupEl.style.display = "flex";
-        popupCloseBtn.focus();
-        document.body.style.overflow = "hidden";
-      }
+            // Function to open the popup modal
+            function openPopup(title, message, imageUrl) {
+                popupImage.src = imageUrl;
+                // Fallback for image loading errors: display a generic placeholder
+                popupImage.onerror = () => {
+                    popupImage.src = `https://placehold.co/350x350/ff0000/ffffff?text=Image+Error`;
+                    popupImage.alt = "Failed to load image, displaying fallback.";
+                };
+                popupMsgTitle.textContent = title;
+                popupMsgDesc.textContent = message;
+                popupEl.classList.add('show'); // Use class for showing popup with transition
+                popupCloseBtn.focus(); // Focus close button for keyboard accessibility
+                document.body.style.overflow = "hidden"; // Prevent background scrolling
+            }
 
-      // Close popup
-      function closePopup() {
-        popupEl.style.display = "none";
-        popupImage.src = "";
-        popupMsgTitle.textContent = "";
-        popupMsgDesc.textContent = "";
-        document.body.style.overflow = "";
-      }
+            // Function to close the popup modal
+            function closePopup() {
+                popupEl.classList.remove('show'); // Hide popup with transition
+                // Clear content after transition for cleaner state
+                setTimeout(() => {
+                    popupImage.src = "";
+                    popupMsgTitle.textContent = "";
+                    popupMsgDesc.textContent = "";
+                }, 400); // Match transition duration
+                document.body.style.overflow = ""; // Restore background scrolling
+            }
 
-      popupCloseBtn.addEventListener('click', closePopup);
+            // Event listeners for closing the popup
+            popupCloseBtn.addEventListener('click', closePopup);
+            // Close popup if clicking outside its content area
+            popupEl.addEventListener('click', (e) => {
+                if (e.target === popupEl) {
+                    closePopup();
+                }
+            });
 
-      popupEl.addEventListener('click', (e) => {
-        if (e.target === popupEl) {
-          closePopup();
-        }
-      });
+            // Add keyboard accessibility for closing popup (Escape key)
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && popupEl.classList.contains('show')) {
+                    closePopup();
+                }
+            });
 
-      // Countdown update function
-      function updateCountdown() {
-        const now = new Date();
-        let diff = endDate - now;
+            // Tone.js setup for birthday sound
+            let synth;
+            async function playBirthdayTune() {
+                // Ensure audio context is started. This call should ideally be
+                // in response to a user gesture to guarantee playback in all browsers.
+                // However, we will attempt to start it here.
+                if (Tone.context.state !== 'running') {
+                    try {
+                        await Tone.start();
+                    } catch (e) {
+                        console.warn("Audio context could not be started automatically. User interaction may be required.", e);
+                        return; // Exit if context couldn't start
+                    }
+                }
 
-        if (diff < 0) {
-          countdownEl.textContent = "🎉 The birthday has arrived! 🎉";
-          return;
-        }
+                if (!synth) {
+                    // Create a simple synth for a cheerful melody
+                    synth = new Tone.Synth({
+                        oscillator: { type: "sawtooth" },
+                        envelope: {
+                            attack: 0.005,
+                            decay: 0.1,
+                            sustain: 0.05,
+                            release: 0.5,
+                        },
+                    }).toDestination();
+                }
 
-        const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hoursLeft = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutesLeft = Math.floor((diff / (1000 * 60)) % 60);
-        const secondsLeft = Math.floor((diff / 1000) % 60);
+                // Play a short, cheerful melody
+                synth.triggerAttackRelease("C5", "8n", Tone.now());
+                synth.triggerAttackRelease("E5", "8n", Tone.now() + 0.2);
+                synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.4);
+                synth.triggerAttackRelease("C6", "4n", Tone.now() + 0.6);
+            }
 
-        countdownEl.textContent = `Countdown: ${daysLeft}d ${zeroPad(hoursLeft)}h ${zeroPad(minutesLeft)}m ${zeroPad(secondsLeft)}s left until June 28!`;
-      }
+            let countdownInterval; // Variable to hold the countdown interval ID
 
-      // Initialize the app
-      function init() {
-        generateDates();
-        renderDateCards();
-        updateCountdown();
-        setInterval(() => {
-          updateCountdown();
-          renderDateCards(); // Refresh disabled/enabled states as the day advances
-        }, 1000);
-      }
+            // Function to update the countdown timer
+            function updateCountdown() {
+                const now = new Date();
+                let diff = endDate - now; // Difference in milliseconds
 
-      window.onload = init;
-    })();
-  </script>
+                if (diff < 0) {
+                    countdownEl.textContent = "🎉 The birthday has arrived! Happy Birthday! 🎉";
+                    clearInterval(countdownInterval); // Stop the countdown once it's passed
+
+                    // Play birthday sound automatically only once when the birthday arrives
+                    if (!birthdaySoundPlayed) {
+                        playBirthdayTune(); // Attempt to play automatically
+                        birthdaySoundPlayed = true; // Set flag to true to prevent repeated playback
+                    }
+                    return;
+                }
+
+                // Calculate days, hours, minutes, and seconds
+                const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hoursLeft = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const minutesLeft = Math.floor((diff / (1000 * 60)) % 60);
+                const secondsLeft = Math.floor((diff / 1000) % 60);
+
+                countdownEl.textContent = `Countdown: ${daysLeft}d ${zeroPad(hoursLeft)}h ${zeroPad(minutesLeft)}m ${zeroPad(secondsLeft)}s left until June 28!`;
+            }
+
+            // Initialization function for the application
+            function init() {
+                // Attempt to start Tone.js audio context right away.
+                // Modern browsers might still require a user gesture (like a click)
+                // before audio can fully play.
+                Tone.start().then(() => {
+                    console.log("Audio context started successfully.");
+                }).catch(e => {
+                    console.warn("Audio context failed to start immediately, user interaction might be needed:", e);
+                });
+
+
+                generateDates(); // Prepare all the date data
+                renderDateCards(); // Render the initial set of cards
+                updateCountdown(); // Set the initial countdown display
+
+                // Set up intervals for real-time updates
+                countdownInterval = setInterval(updateCountdown, 1000); // Update countdown every second
+
+                // Re-render date cards every hour to accurately reflect 'today's' status
+                // This is less frequent than countdown as date status changes only once per day.
+                setInterval(renderDateCards, 1000 * 60 * 60); // Every hour
+            }
+
+            // Start the application when the entire window content has loaded
+            window.onload = init;
+        })();
+    </script>
 </body>
 </html>
-
